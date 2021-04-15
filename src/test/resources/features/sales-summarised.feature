@@ -1,7 +1,4 @@
 Feature: Sales Summarised.
-
-  Scenario: A sale-summary is produced for each placed order.
-
   Scenario Outline:
     Given An existing customer "<customer>".
     And A product catalog of "<product-catalog>".
