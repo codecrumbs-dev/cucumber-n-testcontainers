@@ -1,0 +1,5 @@
+{
+  "customerName": "John Smith",
+  "itemsDescriptions": ["Apples","Pears"],
+  "value": 3.69
+}

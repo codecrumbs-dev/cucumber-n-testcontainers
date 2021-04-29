@@ -1,0 +1,13 @@
+{
+  "customerId": 123,
+  "items": [
+    {
+      "productId": 345,
+      "quantity": 5
+    },
+    {
+      "productId": 701,
+      "quantity": 2
+    }
+  ]
+}
