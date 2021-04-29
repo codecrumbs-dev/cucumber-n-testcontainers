@@ -21,7 +21,7 @@ public class StepDefinitions {
     @Given("An existing customer of {string}.")
     public void anExistingCustomer(String customer) throws SQLException {
         LOG.info("Loading existing customer {}", customer);
-        IngestionPipeline.insertCustomer(
+        Pipeline.insertCustomer(
                 Utils.loadJson(String.format("/test-data/customers/%s.json", customer))
         );
     }
@@ -29,7 +29,7 @@ public class StepDefinitions {
     @And("A product catalog of {string}.")
     public void aProductCatalogOf(String catalog) throws SQLException {
         LOG.info("Loading product catalog {}", catalog);
-        IngestionPipeline.insertProducts(
+        Pipeline.insertProducts(
                 Utils.loadJson(String.format("/test-data/product-catalogs/%s.json", catalog))
         );
     }
@@ -38,7 +38,7 @@ public class StepDefinitions {
     public void orderIsReceived(String order) {
         orderNumber = ThreadLocalRandom.current().nextInt(1000000);
         LOG.info("Injecting order {} with order number {}", order, orderNumber);
-        IngestionPipeline.send(
+        Pipeline.send(
                 Topic.ORDERS,
                 orderNumber,
                 Utils.loadJson(String.format("/test-data/orders/%s.json", order))
@@ -49,7 +49,7 @@ public class StepDefinitions {
     public void salesTeamAreNotifiedOfOrder(String orderSummary) {
         LOG.info("Verifying that order summary {} is received by sales team.", orderSummary);
         Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(
-                () -> assertThat(IngestionPipeline.messagesOn(Topic.SALES))
+                () -> assertThat(Pipeline.messagesOn(Topic.SALES))
                         .hasSize(1)
                         .containsOnlyKeys(orderNumber)
                         .containsValue(Utils.loadJson(String.format("/test-data/sales-summaries/%s.json", orderSummary)))

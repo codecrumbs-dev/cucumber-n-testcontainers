@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-public class IngestionPipeline implements EventListener {
+public class Pipeline implements EventListener {
 
     private static final String CONFLUENT_VERSION = "6.0.1";
     private static final String MARIADB_VERSION = "10.5.9";
