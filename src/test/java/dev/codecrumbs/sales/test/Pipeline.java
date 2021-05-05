@@ -37,7 +37,6 @@ public class Pipeline implements EventListener {
     private static final MariaDBContainer<?> DATABASE = new MariaDBContainer<>(
             DockerImageName.parse("mariadb")
                     .withTag(MARIADB_VERSION))
-            .withExposedPorts()
             .withInitScript("schema.sql")
             .withLogConsumer(logConsumer("maria-db"));
 
