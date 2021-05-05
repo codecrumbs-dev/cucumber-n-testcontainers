@@ -24,25 +24,21 @@ import java.util.stream.StreamSupport;
 
 public class Pipeline implements EventListener {
 
-    private static final String CONFLUENT_VERSION = "6.0.1";
-    private static final String MARIADB_VERSION = "10.5.9";
-
-    private static final KafkaContainer KAFKA = new KafkaContainer(
-            DockerImageName.parse("confluentinc/cp-kafka")
-                    .withTag(CONFLUENT_VERSION))
-            .withLogConsumer(logConsumer("kafka-container"))
-            .waitingFor(Wait.forLogMessage(".*KafkaServer.*started.*", 1));
+    private static final KafkaContainer KAFKA =
+            new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:6.0.1"))
+                    .withLogConsumer(logConsumer("kafka-container"))
+                    .waitingFor(Wait.forLogMessage(".*KafkaServer.*started.*", 1));
 
 
-    private static final MariaDBContainer<?> DATABASE = new MariaDBContainer<>(
-            DockerImageName.parse("mariadb")
-                    .withTag(MARIADB_VERSION))
-            .withInitScript("schema.sql")
-            .withLogConsumer(logConsumer("maria-db"));
+    private static final MariaDBContainer<?> DATABASE =
+            new MariaDBContainer<>(DockerImageName.parse("mariadb:10.5.9"))
+                    .withInitScript("schema.sql")
+                    .withLogConsumer(logConsumer("maria-db"));
 
     private static final GenericContainer<?> APPLICATION =
             new GenericContainer<>(DockerImageName.parse("order-enrichment-stream"))
-                    .withLogConsumer(logConsumer("order-enrichment-stream"));
+                    .withLogConsumer(logConsumer("order-enrichment-stream"))
+                    .waitingFor(Wait.forLogMessage(".*Started Application.*", 1));
 
     private static Slf4jLogConsumer logConsumer(String loggerName) {
         return new Slf4jLogConsumer(LoggerFactory.getLogger(loggerName)).withSeparateOutputStreams();
@@ -66,7 +62,6 @@ public class Pipeline implements EventListener {
                                 "spring.datasource.password", DATABASE.getPassword()
                         )
                 )
-                .waitingFor(Wait.forLogMessage(".*Started Application.*", 1))
                 .start();
         Utils.createTopics(KAFKA);
         kafkaConsumer = Utils.consumerFor(Topic.SALES, KAFKA);
@@ -84,14 +79,14 @@ public class Pipeline implements EventListener {
     };
 
     public static void send(Topic topic, int orderNumber, JsonNode document) {
-            Utils.send(
-                    KAFKA,
-                    new ProducerRecord<>(
-                            topic.value(),
-                            orderNumber,
-                            document.toString()
-                    )
-            );
+        Utils.send(
+                KAFKA,
+                new ProducerRecord<>(
+                        topic.value(),
+                        orderNumber,
+                        document.toString()
+                )
+        );
     }
 
     public static Map<Integer, JsonNode> messagesOn(Topic topic) {
