@@ -29,7 +29,6 @@ public class Pipeline implements EventListener {
                     .withLogConsumer(logConsumer("kafka-container"))
                     .waitingFor(Wait.forLogMessage(".*KafkaServer.*started.*", 1));
 
-
     private static final MariaDBContainer<?> DATABASE =
             new MariaDBContainer<>(DockerImageName.parse("mariadb:10.5.9"))
                     .withInitScript("schema.sql")
@@ -51,21 +50,23 @@ public class Pipeline implements EventListener {
         KAFKA.withNetwork(network).start();
         DATABASE.withNetwork(network).start();
         APPLICATION.withNetwork(network)
-                .withEnv(
-                        Map.of(
-                                "spring.kafka.bootstrapServers", KAFKA.getNetworkAliases().get(0) + ":9092",
-                                "spring.cloud.stream.kafka.binder.brokers", KAFKA.getNetworkAliases().get(0) + ":9092",
-                                "spring.cloud.stream.bindings.enrichOrder-in-0.destination", Topic.ORDERS.value(),
-                                "spring.cloud.stream.bindings.enrichOrder-out-0.destination", Topic.SALES.value(),
-                                "spring.datasource.url", "jdbc:mariadb://" + DATABASE.getNetworkAliases().get(0) + ":3306/" + DATABASE.getDatabaseName(),
-                                "spring.datasource.username", DATABASE.getUsername(),
-                                "spring.datasource.password", DATABASE.getPassword()
-                        )
-                )
+                .withEnv(applicationEnvironment())
                 .start();
         Utils.createTopics(KAFKA);
         kafkaConsumer = Utils.consumerFor(Topic.SALES, KAFKA);
     };
+
+    private Map<String, String> applicationEnvironment() {
+        return Map.of(
+                "spring.kafka.bootstrapServers", KAFKA.getNetworkAliases().get(0) + ":9092",
+                "spring.cloud.stream.kafka.binder.brokers", KAFKA.getNetworkAliases().get(0) + ":9092",
+                "spring.cloud.stream.bindings.enrichOrder-in-0.destination", Topic.ORDERS.value(),
+                "spring.cloud.stream.bindings.enrichOrder-out-0.destination", Topic.SALES.value(),
+                "spring.datasource.url", "jdbc:mariadb://" + DATABASE.getNetworkAliases().get(0) + ":3306/" + DATABASE.getDatabaseName(),
+                "spring.datasource.username", DATABASE.getUsername(),
+                "spring.datasource.password", DATABASE.getPassword()
+        );
+    }
 
     private final EventHandler<TestCaseStarted> startTestCase = testCaseStarted -> {
         Utils.jdbcTemplateFor(DATABASE).update("delete from customers");
