@@ -11,6 +11,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.TopicPartition;
 import org.mariadb.jdbc.MariaDbDataSource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
@@ -21,12 +22,8 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 public class Utils {
@@ -69,14 +66,13 @@ public class Utils {
 
     static KafkaConsumer<Integer, String> consumerFor(Topic topic, KafkaContainer kafka) {
 
-        KafkaConsumer<Integer, String> consumer = new KafkaConsumer<>(
-                KafkaTestUtils.consumerProps(
-                        kafka.getBootstrapServers(),
-                        "any-group-" + ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE),
-                        "true"
-                )
+        Map<String, Object> properties = KafkaTestUtils.consumerProps(
+                kafka.getBootstrapServers(),
+                "test-group",
+                "true"
         );
-        consumer.subscribe(Set.of(topic.value()));
+        KafkaConsumer<Integer, String> consumer = new KafkaConsumer<>(properties);
+        consumer.assign(Set.of(new TopicPartition(topic.value(), 0)));
         return consumer;
     }
 
@@ -108,5 +104,12 @@ public class Utils {
         } catch (Exception e) {
             throw new RuntimeException("Error sending message", e);
         }
+    }
+
+    public static void resetConsumer(KafkaConsumer<Integer, String> kafkaConsumer, Topic topic) {
+        TopicPartition partition = new TopicPartition(topic.value(), 0);
+        // seek to end and then call position() to force evaluation as seekToEnd() is lazily executed
+        kafkaConsumer.seekToEnd(Set.of(partition));
+        kafkaConsumer.position(partition);
     }
 }

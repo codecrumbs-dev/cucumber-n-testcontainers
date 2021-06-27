@@ -38,10 +38,10 @@ public class Pipeline implements EventListener {
             new GenericContainer<>(DockerImageName.parse("order-enrichment-stream"))
                     .withLogConsumer(logConsumer("order-enrichment-stream"))
                     .waitingFor(Wait.forLogMessage(".*Started Application.*", 1));
-
     private static Slf4jLogConsumer logConsumer(String loggerName) {
         return new Slf4jLogConsumer(LoggerFactory.getLogger(loggerName)).withSeparateOutputStreams();
     }
+
 
     private static KafkaConsumer<Integer, String> kafkaConsumer;
 
@@ -55,6 +55,7 @@ public class Pipeline implements EventListener {
         Utils.createTopics(KAFKA);
         kafkaConsumer = Utils.consumerFor(Topic.SALES, KAFKA);
     };
+
 
     private Map<String, String> applicationEnvironment() {
         return Map.of(
@@ -71,6 +72,7 @@ public class Pipeline implements EventListener {
     private final EventHandler<TestCaseStarted> startTestCase = testCaseStarted -> {
         Utils.jdbcTemplateFor(DATABASE).update("delete from customers");
         Utils.jdbcTemplateFor(DATABASE).update("delete from products");
+        Utils.resetConsumer(kafkaConsumer, Topic.SALES);
     };
 
     private final EventHandler<TestRunFinished> shutDown = testRunFinished -> {
